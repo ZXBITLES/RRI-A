@@ -1,0 +1,331 @@
+sub InitAlien(x as ubyte, y as ubyte)
+    AlienX = x
+    AlienY = y
+    AlienLocation = AlienLocationDown
+    AlienFrame = 0
+    AlienAction = AlienActionUp
+    AlienHP = 4 - gameDifficulty + 1
+    AlienDead = 0
+end sub
+
+function CanInfectNPC() as ubyte
+	if AlienAction<>AlienActionDown then return 0
+    dim nx as ubyte
+	dim ny as ubyte
+	dim ndir as ubyte
+    dim infected as ubyte
+    infected=0
+	for i = 0 to 5
+		nx = npcX(i)
+		ny = npcY(i)
+		ndir = npcDirection(i)			
+		if npcLive(i) = 1 and infected=0 then
+			if ndir = directionLS or ndir = directionLD or ndir = directionLF or ndir = directionLW then
+				if AlienX=nx and AlienY=ny then 
+                    infected=1
+                end if 
+			end if 
+			if ndir = directionRS or ndir = directionRD or ndir = directionRF or ndir = directionRW then
+				if AlienX=nx and AlienY=ny then 
+                    infected=1                   
+                end if
+			end if
+            if infected=1 then
+                npcLive(i)=0
+                npcHP(i)=0
+                playerX=npcX(i)
+                playerY=npcY(i)
+                playerShield=10
+                playerDirection=npcDirection(i)
+                playerDead=0
+                AlienHP=0
+                AlienDead=1
+                AlienX=0
+                AlienY=0
+                RefreshUI(0)
+            end if 
+		end if 
+	next    
+	return infected
+end function
+
+sub DrawAlienDies()    
+    AlienDies()
+    if AlienFrame=1 then
+        AlienScream()
+        sprite1="\A"        
+    end if 
+    if AlienFrame=2 then
+        sprite1="\B"
+    end if 
+    if AlienFrame=3 then
+        sprite1="\C"
+    end if 
+    if AlienFrame=4 then
+        sprite1="\D"
+    end if 
+    if AlienFrame=5 then
+        sprite1="\E"
+    end if 
+    if AlienFrame=6 then
+        sprite1="\F"
+    end if 
+    if AlienFrame<7 then print at AlienY, AlienX; ink 3; bright 1; sprite1
+    if AlienFrame=7 then
+        RedrawArea(AlienX,AlienY)
+        AlienDead=1
+    end if 
+    Wait(): Wait(): Wait(): Wait(): Wait(): Wait()
+end sub
+
+sub DrawAlien()
+    if mitosisactive=1 then bright 1
+    if AlienAction=AlienActionEmpty then
+        AlienMoveUpDown() 
+        if AlienLocation = AlienLocationUp then
+            print at AlienY, AlienX; ink 3; "\H"
+        end if 
+        if AlienLocation = AlienLocationDown then
+            print at AlienY, AlienX; ink 3; "\A"
+        end if 
+    end if 
+
+    if AlienAction=AlienActionUp then
+        if AlienFrame=5 then
+            RedrawArea(AlienX,AlienY)
+        end if 
+        AlienMoveUpDown()       
+        if AlienFrame=1 then
+            'Check switch
+            SwitchAction(AlienX,AlienY,0)
+            print at AlienY, AlienX; ink 3; "\A"
+        end if 
+        if AlienFrame=2 then
+            print at AlienY, AlienX; ink 3; "\B"
+        end if 
+        if AlienFrame=3 then
+            print at AlienY-1, AlienX; ink 3; "\C"
+            print at AlienY, AlienX; ink 3; "\D"
+        end if 
+        if AlienFrame=4 then
+            print at AlienY-1, AlienX; ink 3; "\E"
+            print at AlienY, AlienX; ink 3; "\F"
+        end if 
+        if AlienFrame=5 then
+            print at AlienY-1, AlienX; ink 3; "\G"
+            itemp=GetChar(AlienX,AlienY-2)
+            if itemp=11 or itemp=1 or itemp=10 or AlienY=1 then 
+                itemp=itemp
+            else
+                AlienY=AlienY-1
+                AlienFrame=4
+            end if 
+        end if 
+        if AlienFrame=6 then
+            print at AlienY-1, AlienX; ink 3; "\H"
+            AlienY=AlienY-1
+            AlienAction=AlienActionEmpty
+            AlienLocation = AlienLocationUp
+        end if 
+    end if 
+
+    if AlienAction=AlienActionDown then
+        if AlienFrame=5 then
+            RedrawArea(AlienX, AlienY)
+        end if 
+        AlienMoveUpDown()
+        if AlienFrame=1 then
+            print at AlienY, AlienX; ink 3; "\H"
+        end if 
+        if AlienFrame=2 then
+            print at AlienY, AlienX; ink 3; "\G"
+        end if 
+        if AlienFrame=3 then
+            print at AlienY, AlienX; ink 3; "\E"
+            print at AlienY+1, AlienX; ink 3; "\F"
+        end if 
+        if AlienFrame=4 then
+            print at AlienY, AlienX; ink 3; "\C"
+            print at AlienY+1, AlienX; ink 3; "\D"
+        end if
+        if AlienFrame=5 then
+            itemp=GetChar(AlienX,AlienY+1)
+            if itemp=11 or itemp=1 then 
+                AlienY=AlienY-1
+            end if 
+            print at AlienY+1, AlienX; ink 3; "\B"
+            itemp=GetChar(AlienX,AlienY+2)
+            if itemp=11 or itemp=1 or itemp=10 or AlienY=19 then 
+                itemp=itemp
+            else
+                AlienY=AlienY+1
+                AlienFrame=4
+            end if 
+        end if 
+        if AlienFrame=6 then
+            print at AlienY+1, AlienX; ink 3; "\A"
+            AlienY=AlienY+1
+            AlienAction=AlienActionEmpty
+            AlienLocation = AlienLocationDown
+            'Check switch
+            SwitchAction(AlienX,AlienY,1)
+        end if 
+    end if 
+
+    if AlienAction=AlienActionRight then
+        if AlienLocation=AlienLocationUp then AlienMoveRightLeft() 
+        if AlienLocation=AlienLocationDown then AlienMoveRightLeft2() 
+        if AlienFrame=6 then            
+            AlienAction=AlienActionEmpty
+            AlienX=AlienX+1
+            RedrawArea(AlienX-1,AlienY)
+            'Check switch
+            if AlienLocation=AlienLocationDown then
+                SwitchAction(AlienX,AlienY,1)
+                SwitchAction(AlienX-1,AlienY,0)
+            end if 
+            itemp=GetChar(AlienX,AlienY+1)
+            if itemp<>1 and itemp<>11 and itemp<>6 then
+                if AlienLocation=AlienLocationDown then 
+                    AlienLocation=AlienLocationUp
+					AlienAction=AlienActionDown
+                    AlienFrame=4
+                    bright 0
+                    return
+                end if 
+            end if 
+            if AlienLocation=AlienLocationUp then 
+                itemp=GetChar(AlienX,AlienY-1)
+                if itemp<>1 and itemp<>11 and itemp<>6 then
+                    AlienAction=AlienActionDown
+                    AlienFrame=4
+                    bright 0
+                    return
+                end if 
+            end if 
+        end if               
+        if AlienFrame=1 then
+            sprite1="\A\B"
+        end if 
+        if AlienFrame=2 then
+            sprite1="\C\D"
+        end if 
+        if AlienFrame=3 then
+            sprite1="\E\F"
+        end if 
+        if AlienFrame=4 then
+            sprite1="\G\H"
+        end if 
+        if AlienFrame=5 then
+            sprite1="\I\J"            
+        end if 
+        if AlienFrame<6 then print at AlienY, AlienX; ink 3; sprite1
+    end if 
+
+    if AlienAction=AlienActionLeft then
+        if AlienLocation=AlienLocationUp then AlienMoveRightLeft() 
+        if AlienLocation=AlienLocationDown then AlienMoveRightLeft2()
+        if AlienFrame=6 then
+            AlienAction=AlienActionEmpty
+            AlienX=AlienX-1
+            RedrawArea(AlienX+1,AlienY)
+            'Check switch
+            if AlienLocation=AlienLocationDown then
+                SwitchAction(AlienX,AlienY,1)
+                SwitchAction(AlienX+1,AlienY,0)
+            end if 
+            itemp=GetChar(AlienX,AlienY+1)
+            if itemp<>1 and itemp<>11 and itemp<>6 then
+                if AlienLocation=AlienLocationDown then 
+                    AlienLocation=AlienLocationUp
+					AlienAction=AlienActionDown
+                    AlienFrame=4
+                    bright 0
+                    return
+                end if 
+            end if 
+            if AlienLocation=AlienLocationUp then 
+                itemp=GetChar(AlienX,AlienY-1)
+                if itemp<>1 and itemp<>11 and itemp<>6 then
+                    AlienAction=AlienActionDown
+                    AlienFrame=4
+                    bright 0
+                    return
+                end if 
+            end if 
+        end if               
+        if AlienFrame=1 then
+            sprite1="\I\J"
+        end if 
+        if AlienFrame=2 then
+            sprite1="\G\H"
+        end if 
+        if AlienFrame=3 then
+            sprite1="\E\F"
+        end if 
+        if AlienFrame=4 then
+            sprite1="\C\D"
+        end if 
+        if AlienFrame=5 then
+            sprite1="\A\B"            
+        end if 
+        if AlienFrame<6 then print at AlienY, AlienX-1; ink 3; sprite1
+    end if
+    bright 0     
+end sub
+
+function CloneAlien(x as ubyte, y as ubyte) as ubyte
+    dim ch as ubyte = GetChar(x,y)
+    if ch<>10 and ch<>11 and ch<>1 then
+        if AlienLocation=AlienLocationDown then
+            ch=GetChar(x,y+1)
+            if ch<>10 and ch<>11 and ch<>1 then return 0
+        else
+            ch=GetChar(x,y-1)
+            if ch<>10 and ch<>11 and ch<>1 then return 0
+        end if 
+        AlienScream()
+        cloneX=x
+        cloneY=y
+        mitosisactive=1
+        cloneLocation=AlienLocation
+        cloneHP=AlienHP
+        DrawClone()
+        return 1
+    end if 
+    return 0
+end function
+
+sub DrawClone()
+    bright 0
+    AlienMoveUpDown() 
+    if cloneLocation=AlienLocationUp then
+        sprite1="\H"
+    else
+        sprite1="\A"
+    end if
+    print at cloneY, cloneX; ink 3; sprite1
+end sub 
+
+sub SwitchAliens()
+    AlienScream()
+    itemp=AlienX
+    AlienX=cloneX
+    cloneX=itemp
+
+    itemp=AlienY				
+    AlienY=cloneY				
+    cloneY=itemp
+
+    itemp=AlienLocation				
+    AlienLocation=cloneLocation				
+    cloneLocation=itemp
+
+    itemp=AlienHP				
+    AlienHP=cloneHP				
+    cloneHP=itemp
+    RefreshUI(0)
+    DrawAlien()
+    DrawClone() 
+end sub 
+
